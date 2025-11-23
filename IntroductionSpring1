@@ -1,0 +1,103 @@
+1. What is Spring Framework
+   Spring is a lightweight, open-source, Java-based framework used to build enterprise applications.
+    It provides a powerful infrastructure for developing robust, loosely-coupled, and testable applications.
+Robust : Robust means strong, stable, and able to handle problems without failing.
+         A system is robust if it can work correctly even when things go wrong.
+         An application that:
+            doesn’t crash when input is wrong
+            handles errors properly
+            keeps running even under heavy load
+            can recover from failures
+            If a user enters letters instead of numbers in a form, a robust system shows validation error—not crash.
+        Java is called robust because:
+              It has strong memory management
+              Garbage collector prevents memory leaks
+              Exception handling prevents crashes
+              Strict compile-time checking
+
+1a Why spring was needed?
+  Before Spring, developers used:
+      Java EE / J2EE (Servlets, JSP, EJBs)
+      Heavy, complex configurations (XML everywhere!)
+      Hard-to-test applications
+      Tight coupling between components
+Spring solved these issues by offering:
+      Lightweight architecture
+      Loose coupling with Dependency Injection (DI)
+      Easy testing
+      Modular design
+
+1b) Tight Coupling:
+    Two classes are tightly coupled when:
+          one class is highly dependent on another
+          changes in one class force changes in the other
+          classes are directly creating or controlling each other
+    import java.io.*;
+    import java.util.*;
+    import java.lang.*;
+    
+    public class Main
+    {
+        public static class First {
+            Second obj = new Second();
+            void print() {
+                obj.display();
+            }
+        }
+        public static class Second {
+            void display() {
+                System.out.println("Second class");
+            }
+        }
+    	public static void main(String[] args) {
+    		First obj1 = new First();
+    		obj1.print();
+    	}
+    }
+Class First creates and controls second class - High dependency
+If class second changes class first also should be modified
+Class second is highly dependent on class first
+
+1c) Loose coupling:
+    Two classes are loosely coupled when:
+        they depend on interfaces/abstractions, not concrete classes
+        changes in one class do NOT require changes in another
+        dependencies are provided from outside (DI – Dependency Injection)
+code:
+import java.io.*;
+import java.util.*;
+import java.lang.*;
+
+interface Payment {
+    void makepayment();
+}
+public class Main
+{
+    public static class googlepay implements Payment {
+        public void makepayment() {
+            System.out.println("Payment using googlepay");
+        }
+    }
+     public static class phonepay implements Payment {
+        public void makepayment() {
+            System.out.println("Payment using phonepay");
+        }
+    }
+    public static class Shoppingservice {
+        private Payment payment;
+        Shoppingservice(Payment payment) {
+            this.payment = payment;
+        }
+        void checkout() {
+            payment.makepayment();
+        }
+    }
+	public static void main(String[] args) {
+		Shoppingservice service1 = new Shoppingservice(new googlepay());
+		service1.checkout();
+		Shoppingservice service2 = new Shoppingservice(new phonepay());
+		service2.checkout();
+	}
+}
+Note:
+Interface methods are public ,if u implement those methods in other classes it should be public
