@@ -23,3 +23,12 @@ public class StudentController {
         return "Student ID: " + id;
     }
 }
+// Multiple path variables
+    @GetMapping("/student/{id}/course/{courseId}")
+@ResponseBody
+public String getDetails(
+        @PathVariable int id,
+        @PathVariable int courseId) {
+
+    return "Student: " + id + ", Course: " + courseId;
+}
