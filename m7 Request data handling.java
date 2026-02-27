@@ -32,3 +32,24 @@ public String getDetails(
 
     return "Student: " + id + ", Course: " + courseId;
 }
+
+
+//Handling Form data(HTML Form submission)
+<form action="/saveStudent" method="post">
+    Name: <input type="text" name="name"><br>
+    Age: <input type="number" name="age"><br>
+    <button type="submit">Submit</button>
+</form>
+
+    @Controller
+public class StudentController {
+
+    @PostMapping("/saveStudent")
+    @ResponseBody
+    public String saveStudent(
+            @RequestParam String name,
+            @RequestParam int age) {
+
+        return "Saved Student: " + name + ", Age: " + age;
+    }
+}
