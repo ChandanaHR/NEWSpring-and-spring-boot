@@ -73,3 +73,31 @@ public class StudentController {
         return student;
     }
 }
+
+//Handling Entire Object Using @ModelAttribute
+//Create model clss
+public class Student {
+
+    private String name;
+    private int age;
+
+    // getters and setters
+}
+//html page
+<form action="/register" method="post">
+    Name: <input type="text" name="name"><br>
+    Age: <input type="number" name="age"><br>
+    <button type="submit">Submit</button>
+</form>
+    //Controller
+    @Controller
+public class StudentController {
+
+    @PostMapping("/register")
+    @ResponseBody
+    public String registerStudent(@ModelAttribute Student student) {
+
+        return "Registered: " + student.getName() +
+               ", Age: " + student.getAge();
+    }
+}
