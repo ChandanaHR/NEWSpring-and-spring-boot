@@ -101,3 +101,36 @@ public class StudentController {
                ", Age: " + student.getAge();
     }
 }
+//MainController.java
+package com.example.mvc1;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Controller
+public class Maincontroller {
+	@GetMapping("/home")
+	public String home1() {
+		return "home";
+	}
+}
+//StudentController.java
+package com.example.mvc1;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class StudentController {
+	@PostMapping("/register")
+    @ResponseBody
+    public String registerStudent(@ModelAttribute Student student) {
+
+        return "Registered: " + student.getName() +
+               ", Age: " + student.getAge();
+    }
+}
+
