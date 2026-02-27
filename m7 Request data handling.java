@@ -53,3 +53,23 @@ public class StudentController {
         return "Saved Student: " + name + ", Age: " + age;
     }
 }
+
+// Handling Request Body(JSONData-RestAPI)
+//Create model class
+public class Student {
+
+    private String name;
+    private int age;
+
+    // getters and setters create mandatory
+}
+//Create controller class
+@RestController
+public class StudentController {
+
+    @PostMapping("/api/student")
+    public Student createStudent(@RequestBody Student student) {
+
+        return student;
+    }
+}
