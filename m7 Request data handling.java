@@ -145,4 +145,19 @@ public class HeaderController {
         return "Browser Info: " + userAgent;
     }
 }
+//Handling multiple headers
+@GetMapping("/info")
+public String getInfo(
+        @RequestHeader("User-Agent") String userAgent,
+        @RequestHeader("Host") String host) {
+
+    return "Browser: " + userAgent + ", Host: " + host;
+}
+//Get all headers as map
+@GetMapping("/allHeaders")
+public String getAllHeaders(
+        @RequestHeader Map<String, String> headers) {
+
+    return headers.toString();
+}
 
