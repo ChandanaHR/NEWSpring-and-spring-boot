@@ -134,3 +134,15 @@ public class StudentController {
     }
 }
 
+//Handling request header
+@RestController
+public class HeaderController {
+
+    @GetMapping("/header")
+    public String getHeader(
+            @RequestHeader("User-Agent") String userAgent) {
+
+        return "Browser Info: " + userAgent;
+    }
+}
+
