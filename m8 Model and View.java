@@ -91,6 +91,68 @@ public String getStudents(Model model) {
 
     return "students";
 }
+
+
+// m82G) modelMap
+@Controller
+public class HomeController {
+
+    @GetMapping("/about")
+    public String aboutPage(ModelMap modelMap) {
+
+        modelMap.addAttribute("name", "Chandana");
+        modelMap.addAttribute("city", "Bangalore");
+
+        return "about";
+    }
+}
+//about.html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<h1 th:text="${name}"></h1>
+<p th:text="${city}"></p>
+
+</body>
+</html>
+
+	//Passing object example
+	// Student.java
+	public class Student {
+    private int id;
+    private String name;
+
+    // constructor + getters
+}
+//Controller
+@GetMapping("/student")
+public String studentPage(ModelMap modelMap) {
+
+    Student s = new Student(1, "Rahul");
+
+    modelMap.addAttribute("student", s);
+
+    return "student";
+}
+//student.html
+<h2 th:text="${student.id}"></h2>
+<h3 th:text="${student.name}"></h3>
+
+	//Passing Lists example
+	@GetMapping("/students")
+public String students(ModelMap modelMap) {
+
+    List<String> names = Arrays.asList("A", "B", "C");
+
+    modelMap.addAttribute("names", names);
+
+    return "students";
+}
+//students.html
+<ul>
+  <li th:each="n : ${names}" th:text="${n}"></li>
+</ul>
 //home.html
 <ul>
   <li th:each="n : ${names}" th:text="${n}"></li>
