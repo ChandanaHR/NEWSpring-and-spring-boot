@@ -81,3 +81,17 @@ public class Student {
 </body>
 </html>
 
+//Passing list using model
+	@GetMapping("/students")
+public String getStudents(Model model) {
+
+    List<String> names = Arrays.asList("A", "B", "C");
+
+    model.addAttribute("names", names);
+
+    return "students";
+}
+//home.html
+<ul>
+  <li th:each="n : ${names}" th:text="${n}"></li>
+</ul>
