@@ -157,3 +157,96 @@ public String students(ModelMap modelMap) {
 <ul>
   <li th:each="n : ${names}" th:text="${n}"></li>
 </ul>
+
+	m83G) ModelandView
+//ModelController.java
+	package com.example.mvc1;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.ui.Model;
+
+@Controller
+public class ModelController {
+	 @GetMapping("/home")
+	    public ModelAndView homePage() {
+
+	        ModelAndView mv = new ModelAndView();
+
+	        mv.addObject("name", "Chandana");
+	        mv.addObject("course", "Spring MVC");
+
+	        mv.setViewName("home");
+
+	        return mv;
+	    }
+	
+	
+ }
+//home.html
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Home Page</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <h1 th:text ="${name}"></h1>
+    <h2 th:text = "${course}"></h2>
+</body>
+</html>
+
+	//Passing Object Example
+	//Student.java
+public class Student {
+
+    private int id;
+    private String name;
+
+    public Student(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public int getId() { return id; }
+    public String getName() { return name; }
+}
+//StudentController.java
+@GetMapping("/student")
+public ModelAndView studentPage() {
+
+    ModelAndView mv = new ModelAndView();
+
+    Student s = new Student(1, "Rahul");
+
+    mv.addObject("student", s);
+
+    mv.setViewName("student");
+
+    return mv;
+}
+//student.html
+<h2 th:text="${student.id}"></h2>
+<h3 th:text="${student.name}"></h3>
+
+	//Passing List example
+	@GetMapping("/students")
+public ModelAndView studentsPage() {
+
+    ModelAndView mv = new ModelAndView();
+
+    List<String> list = Arrays.asList("A", "B", "C");
+
+    mv.addObject("names", list);
+
+    mv.setViewName("students");
+
+    return mv;
+}
+students.html
+	<ul>
+<li th:each="n : ${names}" th:text="${n}"></li>
+</ul>
