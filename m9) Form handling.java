@@ -147,3 +147,11 @@ Skills:
 <button>Submit</button>
 
 </form>
+@PostMapping("/saveStudent")
+public String saveStudent(Student student) {
+
+    System.out.println(student.getName());
+    System.out.println(student.getSkills());
+
+    return "result";
+}
