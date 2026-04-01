@@ -42,3 +42,36 @@ public class UserController {
 
     <button type="submit">Submit</button>
 </form>
+
+
+
+    //File upload from html form
+    <form action="/upload" method="post" enctype="multipart/form-data">
+    
+    Name: <input type="text" name="name"><br><br>
+    
+    Select File: <input type="file" name="file"><br><br>
+    
+    <button type="submit">Upload</button>
+
+</form>
+
+    //Controller
+    import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@Controller
+public class FileUploadController {
+
+    @PostMapping("/upload")
+    public String uploadFile(@RequestParam("name") String name,
+                             @RequestParam("file") MultipartFile file) {
+
+        System.out.println("Name: " + name);
+        System.out.println("File Name: " + file.getOriginalFilename());
+        System.out.println("File Size: " + file.getSize());
+
+        return "success";
+    }
+}
