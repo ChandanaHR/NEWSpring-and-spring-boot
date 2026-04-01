@@ -75,3 +75,16 @@ public class FileUploadController {
         return "success";
     }
 }
+//Save file to local system
+@PostMapping("/upload")
+public String uploadFile(@RequestParam("file") MultipartFile file) {
+
+    try {
+        String path = "C:/uploads/" + file.getOriginalFilename();
+        file.transferTo(new File(path));
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    return "success";
+}
