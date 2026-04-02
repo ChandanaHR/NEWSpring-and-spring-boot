@@ -88,3 +88,43 @@ public String uploadFile(@RequestParam("file") MultipartFile file) {
 
     return "success";
 }
+
+
+//Using Form backing object
+//Model class
+public class UploadForm {
+
+    private String name;
+    private MultipartFile file;
+
+    // getters & setters
+}
+
+//Controller
+@PostMapping("/upload")
+public String upload(@ModelAttribute UploadForm form) {
+
+    MultipartFile file = form.getFile();
+
+    System.out.println(form.getName());
+    System.out.println(file.getOriginalFilename());
+
+    return "success";
+}
+
+//Thymeleaf form
+<form th:action="@{/upload}" th:object="${uploadForm}" 
+      method="post" enctype="multipart/form-data">
+
+    Name: <input type="text" th:field="*{name}" /><br>
+
+    File: <input type="file" th:field="*{file}" /><br>
+
+    <button type="submit">Upload</button>
+
+</form>
+
+//In application.properties
+    spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=10MB
