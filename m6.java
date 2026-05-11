@@ -154,3 +154,66 @@ public class Student {
     public String getCourse() { return course; }
     public void setCourse(String course) { this.course = course; }
 }
+package web;
+
+import java.util.Objects;
+
+public class Student1 {
+	private int id;
+	private String name;
+	private String qualification;
+	
+	public Student1(int id, String name, String qualification) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.qualification = qualification;
+	}
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getQualification() {
+		return qualification;
+	}
+	public void setQualification(String qualification) {
+		this.qualification = qualification;
+	}
+	
+	@Override
+    public boolean equals(Object obj) {
+
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        Student1 s = (Student1) obj;
+
+        return id == s.id &&
+               Objects.equals(name, s.name) &&
+               Objects.equals(qualification, s.qualification);
+    }
+	
+	@Override
+    public int hashCode() {
+        return Objects.hash(name, id, qualification);
+    }
+
+    @Override
+    public String toString() {
+        return "Student [name=" + name +
+               ", rollno=" + id +
+               ", qualification=" + qualification + "]";
+    }
+	
+}
