@@ -66,3 +66,38 @@ public interface StudentRepository extends JpaRepository<EntityStudent,Integer>{
 
 //Inserting data
 // We are sending data from postman
+//In postman
+http://localhost:8080/insertdata
+[
+    {
+        "name":"chandana",
+        "age":25
+    },
+    {
+        "name":"asha",
+        "age":34
+    },
+    {
+        "name":"ravi",
+        "age":56
+    }
+]
+Controller code
+	package mvc.demo1;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import java.util.*;
+
+@RestController
+public class Controllerstudent {
+	@Autowired
+	private StudentRepository repo;
+	
+	@PostMapping("/insertdata")
+	public List<EntityStudent> savestudents(@RequestBody List<EntityStudent> students) {
+		return repo.saveAll(students);
+	}
+}
