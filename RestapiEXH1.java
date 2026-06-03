@@ -128,3 +128,31 @@ public class Servicestudent {
 	}
 }
 
+Custom Exception
+//StudentNotFoundException
+package mvc.demo1;
+
+public class StudentNotFoundException extends RuntimeException {
+	public StudentNotFoundException(String message) {
+		super(message);
+	}
+}
+//Replace service code class
+package mvc.demo1;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class Servicestudent {
+	@Autowired
+	private StudentRepository repo;
+	
+//	public EntityStudent getStudentById(Integer id) {
+//		return repo.findById(id).get();
+//	}
+	
+	public EntityStudent getStudentById(Integer id) {
+		return repo.findById(id).orElseThrow(()-> new StudentNotFoundException("Student with id " +id+ "doesn't exists"));
+	}
+}
