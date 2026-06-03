@@ -86,6 +86,8 @@ Controller code
 	package mvc.demo1;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -96,8 +98,33 @@ public class Controllerstudent {
 	@Autowired
 	private StudentRepository repo;
 	
+	@Autowired
+	private Servicestudent service;
+	
 	@PostMapping("/insertdata")
 	public List<EntityStudent> savestudents(@RequestBody List<EntityStudent> students) {
 		return repo.saveAll(students);
 	}
+	
+	@GetMapping("/{id}")
+	public EntityStudent getstudent(@PathVariable Integer id) {
+		return  service.getStudentById(id);
+	}
+	
 }
+//Service code
+package mvc.demo1;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class Servicestudent {
+	@Autowired
+	private StudentRepository repo;
+	
+	public EntityStudent getStudentById(Integer id) {
+		return repo.findById(id).get();
+	}
+}
+
