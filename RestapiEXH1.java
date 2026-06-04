@@ -156,3 +156,24 @@ public class Servicestudent {
 		return repo.findById(id).orElseThrow(()-> new StudentNotFoundException("Student with id " +id+ "doesn't exists"));
 	}
 }
+Custom Exception with Global Exception Handling
+	package mvc.demo1;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+	@ExceptionHandler(StudentNotFoundException.class)
+    public ResponseEntity<String> handleStudentNotFound(
+            StudentNotFoundException ex) {
+
+        return new ResponseEntity<>(
+                ex.getMessage(),
+                HttpStatus.NOT_FOUND
+        );
+    }
+}
+//Only message is returned but status code is not displayed
