@@ -177,3 +177,109 @@ public class GlobalExceptionHandler {
     }
 }
 //Only message is returned but status code is not displayed
+Another code
+	//ErrorResponse.java
+	package mvc.demo1;
+
+public class ErrorResponse {
+	private int status;
+	private String message;
+	
+	public ErrorResponse(int status, String message) {
+		super();
+		this.status = status;
+		this.message = message;
+	}
+	public int getStatus() {
+		return status;
+	}
+	public void setStatus(int status) {
+		this.status = status;
+	}
+	public String getMessage() {
+		return message;
+	}
+	public void setMessage(String message) {
+		this.message = message;
+	}
+	
+	
+}
+//GlobalException Handling
+package mvc.demo1;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+	@ExceptionHandler(StudentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleStudentNotFound(
+            StudentNotFoundException ex) {
+//		HttpStatus status = HttpStatus.NOT_FOUND;
+
+		ErrorResponse error =
+		        new ErrorResponse(
+		        		404,
+//		                status.value(),
+		                ex.getMessage()
+		        );
+
+//		return new ResponseEntity<>(
+//				error,
+//				HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(
+        		  error,
+                HttpStatus.NOT_FOUND
+        );
+    }
+}
+//Third approach : using @ResponseStatus
+StudentNotFoundException
+package mvc.demo1;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class StudentNotFoundException extends RuntimeException {
+	public StudentNotFoundException(String message) {
+		super(message);
+	}
+}
+GlobalExceptionHandler
+	package mvc.demo1;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+	@ExceptionHandler(StudentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleStudentNotFound(
+            StudentNotFoundException ex) {
+//		HttpStatus status = HttpStatus.NOT_FOUND;
+		ResponseStatus responseStatus = ex.getClass().getAnnotation(ResponseStatus.class);
+		HttpStatus status = responseStatus.value();
+		ErrorResponse error =
+		        new ErrorResponse(
+		        		status.value(),
+//		                status.value(),
+		                ex.getMessage()
+		        );
+
+//		return new ResponseEntity<>(
+//				error,
+//				HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(
+        		  error,
+                  status
+        );
+    }
+}
+
