@@ -37,7 +37,7 @@ public class Employeecontroller {
 package web;
 
 public class Employeedto {
-	private int emp_id;
+	private Integer emp_id;
 	private String emp_name;
 	public Employeedto() {
 		
@@ -98,10 +98,16 @@ public class Employeeservice implements Employeeserviceinterface{
 		// TODO Auto-generated method stub
 		Employeeentity e = new Employeeentity();
 		e.setEmp_name(dto.getEmp_name());
-		e.setEmp_id(dto.getEmp_id());
 		Employeeentity saved = repo.save(e);
+		dto.setEmp_id(saved.getEmp_id());
 		return dto;
 	}
 	
 	
+	
+}
+//POSTMAN Request
+{
+    "emp_id":0,
+    "emp_name":"ravi"
 }
