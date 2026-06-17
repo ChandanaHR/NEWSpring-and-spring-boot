@@ -51,3 +51,33 @@ public class Student1 {
 	
 	
 }
+
+2 ) next relation
+	@GetMapping("/{id}")
+public EntityModel<Student> getStudent(
+        @PathVariable Integer id) {
+
+    Student student =
+            new Student(id, "Chandana");
+
+    EntityModel<Student> model =
+            EntityModel.of(student);
+
+    model.add(
+            linkTo(
+                    methodOn(StudentController.class)
+                            .getStudent(id)
+            ).withSelfRel()
+    );
+
+    model.add(
+            linkTo(
+                    methodOn(StudentController.class)
+                            .getStudent(id + 1)
+            ).withRel("next")
+    );
+
+    return model;
+}
+
+
