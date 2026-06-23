@@ -107,3 +107,45 @@ public EntityModel<Student> getStudent(
 
     return model;
 }
+
+
+//update
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    @GetMapping("/{id}")
+    public EntityModel<Student> getStudent(
+            @PathVariable Integer id) {
+
+        Student student =
+                new Student(id, "Chandana");
+
+        EntityModel<Student> model =
+                EntityModel.of(student);
+
+        model.add(
+                linkTo(
+                        methodOn(StudentController.class)
+                                .getStudent(id)
+                ).withSelfRel()
+        );
+
+        model.add(
+                linkTo(
+                        methodOn(StudentController.class)
+                                .updateStudent(id, null)
+                ).withRel("update")
+        );
+
+        return model;
+    }
+
+    @PutMapping("/{id}")
+    public Student updateStudent(
+            @PathVariable Integer id,
+            @RequestBody Student student) {
+
+        return student;
+    }
+}
