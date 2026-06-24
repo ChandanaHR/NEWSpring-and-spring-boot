@@ -149,3 +149,45 @@ public class StudentController {
         return student;
     }
 }
+
+//Delete Hateoas relation
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    @GetMapping("/{id}")
+    public EntityModel<Student> getStudent(
+            @PathVariable Integer id) {
+
+        Student student =
+                new Student(id, "Chandana");
+
+        EntityModel<Student> model =
+                EntityModel.of(student);
+
+        // Self Link
+        model.add(
+                linkTo(
+                        methodOn(StudentController.class)
+                                .getStudent(id)
+                ).withSelfRel()
+        );
+
+        // Delete Link
+        model.add(
+                linkTo(
+                        methodOn(StudentController.class)
+                                .deleteStudent(id)
+                ).withRel("delete")
+        );
+
+        return model;
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteStudent(
+            @PathVariable Integer id) {
+
+        return "Student Deleted";
+    }
+}
