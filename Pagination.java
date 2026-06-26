@@ -149,3 +149,61 @@ public class StudentController {
         return service.getStudents(cursor);
     }
 }
+//Dynamic Limit version
+//Repository
+@Repository
+public interface StudentRepository
+        extends JpaRepository<Student,Integer> {
+
+    List<Student> findByIdGreaterThanOrderByIdAsc(
+            Integer cursor,
+            Pageable pageable);
+}
+//Service
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentRepository repository;
+
+    public List<Student> getStudents(
+            Integer cursor,
+            int limit) {
+
+        Pageable pageable =
+                PageRequest.of(0, limit);
+
+        if(cursor == null) {
+
+            return repository.findAll(pageable)
+                             .getContent();
+        }
+
+        return repository
+                .findByIdGreaterThanOrderByIdAsc(
+                        cursor,
+                        pageable);
+    }
+}
+//Controoler
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    @Autowired
+    private StudentService service;
+
+    @GetMapping
+    public List<Student> getStudents(
+
+            @RequestParam(required = false)
+            Integer cursor,
+
+            @RequestParam(defaultValue = "5")
+            int limit) {
+
+        return service.getStudents(
+                cursor,
+                limit);
+    }
+}
