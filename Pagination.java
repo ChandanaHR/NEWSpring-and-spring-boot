@@ -73,3 +73,62 @@ public class StudentController {
         return service.getStudents(page, size);
     }
 }
+
+
+
+//Cursor based pagination
+//Entity
+@Entity
+public class Student {
+
+    @Id
+    private Integer id;
+
+    private String name;
+
+    public Student() {
+    }
+
+    public Student(Integer id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    // getters and setters
+}
+
+//Repository
+//Instead of findall(pageable)
+We create custom query.
+    @Repository
+public interface StudentRepository
+        extends JpaRepository<Student,Integer> {
+
+    List<Student> findTop5ByOrderByIdAsc();
+
+    List<Student> findTop5ByIdGreaterThanOrderByIdAsc(
+            Integer cursor);
+}
+
+//Service
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentRepository repository;
+
+    public List<Student> getStudents(
+            Integer cursor) {
+
+        if(cursor == null) {
+
+            return repository
+                    .findTop5ByOrderByIdAsc();
+        }
+
+        return repository
+                .findTop5ByIdGreaterThanOrderByIdAsc(
+                        cursor);
+    }
+}
+
