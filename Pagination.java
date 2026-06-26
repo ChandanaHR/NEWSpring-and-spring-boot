@@ -207,3 +207,78 @@ public class StudentController {
                 limit);
     }
 }
+
+
+//Pagination+sorting
+//Service layer
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentRepository repository;
+
+    public Page<Student> getStudents(
+            int page,
+            int size) {
+
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size,
+                        Sort.by("name").ascending()
+                );
+
+        return repository.findAll(pageable);
+    }
+}
+
+//Descending order
+PageRequest.of(
+        page,
+        size,
+        Sort.by("name").descending()
+);
+
+//Sorting by multiple columns
+PageRequest.of(
+        page,
+        size,
+        Sort.by("marks").descending()
+            .and(Sort.by("name").ascending())
+);
+//Controller code
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    @Autowired
+    private StudentService service;
+
+    @GetMapping
+    public Page<Student> getStudents(
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "5")
+            int size) {
+
+        return service.getStudents(page, size);
+    }
+}
+
+//Making sorting dynamic
+@GetMapping
+public Page<Student> getStudents(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "5") int size,
+        @RequestParam(defaultValue = "name") String sortBy,
+        @RequestParam(defaultValue = "asc") String direction) {
+
+    Sort sort = direction.equalsIgnoreCase("asc")
+            ? Sort.by(sortBy).ascending()
+            : Sort.by(sortBy).descending();
+
+    Pageable pageable = PageRequest.of(page, size, sort);
+
+    return repository.findAll(pageable);
+}
