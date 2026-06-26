@@ -132,3 +132,20 @@ public class StudentService {
     }
 }
 
+//Controller
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    @Autowired
+    private StudentService service;
+
+    @GetMapping
+    public List<Student> getStudents(
+
+            @RequestParam(required = false)
+            Integer cursor) {
+
+        return service.getStudents(cursor);
+    }
+}
