@@ -155,7 +155,7 @@ public class UserController {
 }
 
 //Query parameter versioning
-Only service layer modification
+Only controller layer modification
   package com.example.versioning.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,6 +187,101 @@ public class UserController {
             return "Invalid API Version";
         }
 
+    }
+
+}
+
+// 3. Header versioning
+  Controller layer
+  package com.example.versioning.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.versioning.service.UserService;
+
+@RestController
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/api/users")
+    public Object getUser(
+            @RequestHeader("API-Version") int version) {
+
+        if (version == 1) {
+            return userService.getUserV1();
+        }
+
+        else if (version == 2) {
+            return userService.getUserV2();
+        }
+
+        else {
+            return "Invalid API Version";
+        }
+    }
+}
+// Another way
+  package com.example.versioning.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.versioning.dto.UserV1;
+import com.example.versioning.dto.UserV2;
+import com.example.versioning.service.UserService;
+
+@RestController
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping(value = "/api/users", headers = "API-Version=1")
+    public UserV1 getUserV1() {
+        return userService.getUserV1();
+    }
+
+    @GetMapping(value = "/api/users", headers = "API-Version=2")
+    public UserV2 getUserV2() {
+        return userService.getUserV2();
+    }
+}
+
+
+// 4. Media Type Versioning
+  package com.example.versioning.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.versioning.dto.UserV1;
+import com.example.versioning.dto.UserV2;
+import com.example.versioning.service.UserService;
+
+@RestController
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping(
+            value = "/api/users",
+            produces = "application/vnd.company.v1+json")
+    public UserV1 getUserV1() {
+
+        return userService.getUserV1();
+    }
+
+    @GetMapping(
+            value = "/api/users",
+            produces = "application/vnd.company.v2+json")
+    public UserV2 getUserV2() {
+
+        return userService.getUserV2();
     }
 
 }
