@@ -153,3 +153,40 @@ public class UserController {
     }
 
 }
+
+//Query parameter versioning
+Only service layer modification
+  package com.example.versioning.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.versioning.service.UserService;
+
+@RestController
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/api/users")
+    public Object getUser(
+            @RequestParam int version) {
+
+        if (version == 1) {
+            return userService.getUserV1();
+        }
+
+        else if (version == 2) {
+            return userService.getUserV2();
+        }
+
+        else {
+            return "Invalid API Version";
+        }
+
+    }
+
+}
