@@ -609,3 +609,224 @@ POST /teachers
     "action":"get",
     "id":1
 }
+
+//Level 2
+//Student.java
+package com.example.level2.model;
+
+public class Student {
+
+    private int id;
+    private String name;
+    private String course;
+
+    public Student() {
+    }
+
+    public Student(int id, String name, String course) {
+        this.id = id;
+        this.name = name;
+        this.course = course;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id){
+        this.id=id;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public void setName(String name){
+        this.name=name;
+    }
+
+    public String getCourse(){
+        return course;
+    }
+
+    public void setCourse(String course){
+        this.course=course;
+    }
+}
+//StudentService.java
+package com.example.level2.service;
+
+import com.example.level2.model.Student;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class StudentService {
+
+    private Map<Integer, Student> database = new HashMap<>();
+
+    // CREATE
+    public Student addStudent(Student student) {
+        database.put(student.getId(), student);
+        return student;
+    }
+
+    // READ
+    public Student getStudent(int id) {
+        return database.get(id);
+    }
+
+    // UPDATE
+    public Student updateStudent(int id, Student student) {
+
+        if(database.containsKey(id)) {
+
+            student.setId(id);
+
+            database.put(id, student);
+
+            return student;
+        }
+
+        return null;
+    }
+
+    // DELETE
+    public boolean deleteStudent(int id) {
+
+        if(database.containsKey(id)) {
+
+            database.remove(id);
+
+            return true;
+        }
+
+        return false;
+    }
+
+}
+//StudentController.java
+package com.example.level2.controller;
+
+import com.example.level2.model.Student;
+import com.example.level2.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    @Autowired
+    private StudentService service;
+
+    // CREATE
+    @PostMapping
+    public ResponseEntity<Student> addStudent(@RequestBody Student student) {
+
+        Student savedStudent = service.addStudent(student);
+
+        return new ResponseEntity<>(savedStudent, HttpStatus.CREATED);
+    }
+
+    // READ
+    @GetMapping("/{id}")
+    public ResponseEntity<Student> getStudent(@PathVariable int id) {
+
+        Student student = service.getStudent(id);
+
+        if(student != null) {
+
+            return new ResponseEntity<>(student, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    // UPDATE
+    @PutMapping("/{id}")
+    public ResponseEntity<Student> updateStudent(
+            @PathVariable int id,
+            @RequestBody Student student) {
+
+        Student updatedStudent = service.updateStudent(id, student);
+
+        if(updatedStudent != null) {
+
+            return new ResponseEntity<>(updatedStudent, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    // DELETE
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteStudent(@PathVariable int id) {
+
+        boolean deleted = service.deleteStudent(id);
+
+        if(deleted) {
+
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+}
+Create Student
+
+Request
+
+POST /students
+
+Body
+
+{
+    "id":101,
+    "name":"Rahul",
+    "course":"Java"
+}
+Get Student
+
+Request
+
+GET /students/101
+
+Response
+
+{
+    "id":101,
+    "name":"Rahul",
+    "course":"Java"
+}
+Update Student
+
+Request
+
+PUT /students/101
+
+Body
+
+{
+    "name":"Rahul",
+    "course":"Spring Boot"
+}
+Delete Student
+
+Request
+
+DELETE /students/101
+
+Status Code
+
+204 No Content
+
+If the student doesn't exist:
+
+404 Not Found
+
