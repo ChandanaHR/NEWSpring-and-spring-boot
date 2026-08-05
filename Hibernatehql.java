@@ -649,3 +649,252 @@ public class MultipleNamedParameters {
 }
 
 You must write SQL manually.
+
+  LIKE Operator
+  The LIKE operator is used to search for data that matches a pattern.
+  Wildcard	Meaning
+%	Zero or more characters
+_	Exactly one character
+  package com.example.hql;
+
+import java.util.List;
+import org.hibernate.Session;
+import com.example.entity.Employee;
+import com.example.util.HibernateUtil;
+
+public class HQLLikeExample {
+
+    public static void main(String[] args) {
+
+        Session session = HibernateUtil.getSessionFactory().openSession();
+
+        List<Employee> list = session.createQuery(
+                "FROM Employee WHERE name LIKE 'R%'",
+                Employee.class
+        ).list();
+
+        list.forEach(System.out::println);
+
+        session.close();
+    }
+}
+List<Employee> list = session.createQuery(
+        "FROM Employee WHERE name LIKE '%i'",
+        Employee.class
+).list();
+List<Employee> list = session.createQuery(
+        "FROM Employee WHERE name LIKE '%an%'",
+        Employee.class
+).list();
+
+
+IN Operator
+What is IN?
+
+The IN operator checks whether a value exists in a given list.
+  package com.example.hql;
+
+import java.util.List;
+
+import org.hibernate.Session;
+
+import com.example.entity.Employee;
+import com.example.util.HibernateUtil;
+
+public class HQLInExample {
+
+    public static void main(String[] args) {
+
+        Session session =
+                HibernateUtil.getSessionFactory().openSession();
+
+        List<Employee> list =
+
+                session.createQuery(
+
+                        "FROM Employee WHERE department IN ('IT','HR')",
+
+                        Employee.class
+
+                ).list();
+
+        list.forEach(System.out::println);
+
+        session.close();
+    }
+}
+
+Aggregate Functions
+Aggregate functions calculate values from multiple rows.
+  package com.example.hql;
+
+import org.hibernate.Session;
+
+import com.example.util.HibernateUtil;
+
+public class CountExample {
+
+    public static void main(String[] args) {
+
+        Session session =
+                HibernateUtil.getSessionFactory().openSession();
+
+        Long count = session.createQuery(
+
+                "SELECT COUNT(*) FROM Employee",
+
+                Long.class
+
+        ).getSingleResult();
+
+        System.out.println("Total Employees : " + count);
+
+        session.close();
+
+    }
+
+}
+SUM()
+What is SUM()?
+
+Calculates the total of a numeric column.
+
+HQL
+SELECT SUM(salary) FROM Employee
+Program
+Double totalSalary = session.createQuery(
+
+        "SELECT SUM(salary) FROM Employee",
+
+        Double.class
+
+).getSingleResult();
+
+System.out.println(totalSalary);
+AVG()
+What is AVG()?
+
+Calculates the average value.
+
+HQL
+SELECT AVG(salary) FROM Employee
+Program
+Double average = session.createQuery(
+
+        "SELECT AVG(salary) FROM Employee",
+
+        Double.class
+
+).getSingleResult();
+
+System.out.println(average);
+MAX()
+What is MAX()?
+
+Returns the highest value.
+
+HQL
+SELECT MAX(salary) FROM Employee
+Program
+Double maxSalary = session.createQuery(
+
+        "SELECT MAX(salary) FROM Employee",
+
+        Double.class
+
+).getSingleResult();
+
+System.out.println(maxSalary);
+MIN()
+What is MIN()?
+
+Returns the smallest value.
+
+HQL
+SELECT MIN(salary) FROM Employee
+Program
+Double minSalary = session.createQuery(
+
+        "SELECT MIN(salary) FROM Employee",
+
+        Double.class
+
+).getSingleResult();
+
+System.out.println(minSalary);
+
+UPDATE Query
+What is UPDATE?
+Updates existing records without loading each entity into memory.
+  package com.example.hql;
+
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
+
+import com.example.util.HibernateUtil;
+
+public class HQLUpdateExample {
+
+    public static void main(String[] args) {
+
+        Session session =
+                HibernateUtil.getSessionFactory().openSession();
+
+        Transaction transaction =
+                session.beginTransaction();
+
+        Query query = session.createQuery(
+
+                "UPDATE Employee SET salary = salary + 5000"
+
+        );
+
+        int rows = query.executeUpdate();
+
+        transaction.commit();
+
+        System.out.println("Updated Rows : " + rows);
+
+        session.close();
+    }
+}
+
+DELETE Query
+What is DELETE?
+Deletes records that match a condition.
+  package com.example.hql;
+
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
+
+import com.example.util.HibernateUtil;
+
+public class HQLDeleteExample {
+
+    public static void main(String[] args) {
+
+        Session session =
+                HibernateUtil.getSessionFactory().openSession();
+
+        Transaction transaction =
+                session.beginTransaction();
+
+        Query query = session.createQuery(
+
+                "DELETE FROM Employee WHERE name='Kiran'"
+
+        );
+
+        int rows = query.executeUpdate();
+
+        transaction.commit();
+
+        System.out.println("Deleted Rows : " + rows);
+
+        session.close();
+    }
+}
+
+
