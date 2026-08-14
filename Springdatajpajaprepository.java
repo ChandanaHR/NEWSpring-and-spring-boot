@@ -142,3 +142,16 @@ while:
 commit()
     =
 "Finalize the transaction"
+
+  b saveandflush()
+  This means saveandflush()
+  public Employee saveAndFlushExample() {
+
+    Employee employee =
+            new Employee("Anita", 55000);
+
+    return repository.saveAndFlush(employee);
+}
+Because employee is new:
+empId = null
+  
