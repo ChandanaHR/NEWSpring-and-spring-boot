@@ -660,3 +660,487 @@ public class StudentController {
 }
 POST http://localhost:8080/students?name=Rahul&departmentId=1
   
+Postman code for ManyToOne
+  Entity classes
+Department.java
+package com.example.demo.entity;
+
+
+import jakarta.persistence.*;
+
+
+@Entity
+@Table(name = "departments")
+public class Department {
+
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+
+    private String name;
+
+
+    public Department() {
+    }
+
+
+    public Department(String name) {
+        this.name = name;
+    }
+
+
+    public Long getId() {
+        return id;
+    }
+
+
+    public String getName() {
+        return name;
+    }
+
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+Student.java
+package com.example.demo.entity;
+
+
+import jakarta.persistence.*;
+
+
+@Entity
+@Table(name = "students")
+public class Student {
+
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+
+    private String name;
+
+
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+
+    public Student() {
+    }
+
+
+    public Student(String name, Department department) {
+        this.name = name;
+        this.department = department;
+    }
+
+
+    public Long getId() {
+        return id;
+    }
+
+
+    public String getName() {
+        return name;
+    }
+
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+    public Department getDepartment() {
+        return department;
+    }
+
+
+    public void setDepartment(Department department) {
+        this.department = department;
+    }
+}
+
+Repository
+DepartmentRepository
+package com.example.demo.repository;
+
+
+import com.example.demo.entity.Department;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+
+public interface DepartmentRepository
+        extends JpaRepository<Department, Long> {
+}
+StudentRepository
+package com.example.demo.repository;
+
+
+import com.example.demo.entity.Student;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+
+public interface StudentRepository
+        extends JpaRepository<Student, Long> {
+}
+Department Service
+
+Create:
+
+service/DepartmentService.java
+package com.example.demo.service;
+
+
+import com.example.demo.entity.Department;
+import com.example.demo.repository.DepartmentRepository;
+import org.springframework.stereotype.Service;
+
+
+import java.util.List;
+
+
+@Service
+public class DepartmentService {
+
+
+    private final DepartmentRepository departmentRepository;
+
+
+    public DepartmentService(
+            DepartmentRepository departmentRepository) {
+
+
+        this.departmentRepository = departmentRepository;
+    }
+
+
+    // CREATE
+    public Department createDepartment(
+            Department department) {
+
+
+        return departmentRepository.save(department);
+    }
+
+
+    // GET ALL
+    public List<Department> getAllDepartments() {
+
+
+        return departmentRepository.findAll();
+    }
+
+
+    // GET BY ID
+    public Department getDepartmentById(Long id) {
+
+
+        return departmentRepository.findById(id)
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Department not found with id: " + id
+                        )
+                );
+    }
+}
+Department Controller
+package com.example.demo.controller;
+
+
+import com.example.demo.entity.Department;
+import com.example.demo.service.DepartmentService;
+import org.springframework.web.bind.annotation.*;
+
+
+import java.util.List;
+
+
+@RestController
+@RequestMapping("/departments")
+public class DepartmentController {
+
+
+    private final DepartmentService departmentService;
+
+
+    public DepartmentController(
+            DepartmentService departmentService) {
+
+
+        this.departmentService = departmentService;
+    }
+
+
+    // CREATE DEPARTMENT
+    @PostMapping
+    public Department createDepartment(
+            @RequestBody Department department) {
+
+
+        return departmentService.createDepartment(department);
+    }
+
+
+    // GET ALL DEPARTMENTS
+    @GetMapping
+    public List<Department> getAllDepartments() {
+
+
+        return departmentService.getAllDepartments();
+    }
+
+
+    // GET DEPARTMENT BY ID
+    @GetMapping("/{id}")
+    public Department getDepartmentById(
+            @PathVariable Long id) {
+
+
+        return departmentService.getDepartmentById(id);
+    }
+}
+Postman
+  POST http://localhost:8080/departments
+Body → raw → JSON
+
+{
+    "name": "Computer Science"
+}
+Create another Department
+  POST http://localhost:8080/departments
+Body:
+
+{
+    "name": "Mechanical"
+}
+Student Service
+
+Now the important part.
+
+When creating a student, the client will send:
+
+{
+    "name": "Rahul",
+    "departmentId": 1
+}
+
+We need to find Department 1 and attach it to Rahul.
+
+For this, create a DTO.
+
+StudentRequest.java
+package com.example.demo.dto;
+
+
+public class StudentRequest {
+
+
+    private String name;
+
+
+    private Long departmentId;
+
+
+    public StudentRequest() {
+    }
+
+
+    public String getName() {
+        return name;
+    }
+
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
+}
+Student Service
+package com.example.demo.service;
+
+
+import com.example.demo.dto.StudentRequest;
+import com.example.demo.entity.Department;
+import com.example.demo.entity.Student;
+import com.example.demo.repository.DepartmentRepository;
+import com.example.demo.repository.StudentRepository;
+import org.springframework.stereotype.Service;
+
+
+import java.util.List;
+
+
+@Service
+public class StudentService {
+
+
+    private final StudentRepository studentRepository;
+
+
+    private final DepartmentRepository departmentRepository;
+
+
+    public StudentService(
+            StudentRepository studentRepository,
+            DepartmentRepository departmentRepository) {
+
+
+        this.studentRepository = studentRepository;
+        this.departmentRepository = departmentRepository;
+    }
+
+
+    // CREATE STUDENT
+    public Student createStudent(
+            StudentRequest request) {
+
+
+        // 1. Find department
+        Department department =
+                departmentRepository
+                        .findById(request.getDepartmentId())
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Department not found with id: "
+                                                + request.getDepartmentId()
+                                )
+                        );
+
+
+        // 2. Create Student
+        Student student = new Student();
+
+
+        student.setName(request.getName());
+
+
+        // 3. Set Department
+        student.setDepartment(department);
+
+
+        // 4. Save Student
+        return studentRepository.save(student);
+    }
+
+
+    // GET ALL STUDENTS
+    public List<Student> getAllStudents() {
+
+
+        return studentRepository.findAll();
+    }
+
+
+    // GET STUDENT BY ID
+    public Student getStudentById(Long id) {
+
+
+        return studentRepository.findById(id)
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Student not found with id: " + id
+                        )
+                );
+    }
+}
+tudent Controller
+package com.example.demo.controller;
+
+
+import com.example.demo.dto.StudentRequest;
+import com.example.demo.entity.Student;
+import com.example.demo.service.StudentService;
+import org.springframework.web.bind.annotation.*;
+
+
+import java.util.List;
+
+
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+
+    private final StudentService studentService;
+
+
+    public StudentController(
+            StudentService studentService) {
+
+
+        this.studentService = studentService;
+    }
+
+
+    // CREATE STUDENT
+    @PostMapping
+    public Student createStudent(
+            @RequestBody StudentRequest request) {
+
+
+        return studentService.createStudent(request);
+    }
+
+
+    // GET ALL STUDENTS
+    @GetMapping
+    public List<Student> getAllStudents() {
+
+
+        return studentService.getAllStudents();
+    }
+
+
+    // GET STUDENT BY ID
+    @GetMapping("/{id}")
+    public Student getStudentById(
+            @PathVariable Long id) {
+
+
+        return studentService.getStudentById(id);
+    }
+}
+Now create Student from Postman
+
+We already created:
+
+Department ID = 1
+Department Name = Computer Science
+
+Now use:
+
+POST http://localhost:8080/students
+
+Postman:
+
+Body → raw → JSON
+
+{
+    "name": "Rahul",
+    "departmentId": 1
+}
+You should get something similar to:
+
+{
+    "id": 1,
+    "name": "Rahul",
+    "department": {
+        "id": 1,
+        "name": "Computer Science"
+    }
+}
