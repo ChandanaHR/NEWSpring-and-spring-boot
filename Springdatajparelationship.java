@@ -1144,3 +1144,512 @@ You should get something similar to:
         "name": "Computer Science"
     }
 }
+
+
+NOTE .......................MANYTOMANY................................
+  Student entity
+  package com.example.demo.entity;
+
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "students")
+public class Student {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    private String email;
+
+    @ManyToMany
+    @JoinTable(
+            name = "student_course",
+            joinColumns = @JoinColumn(name = "student_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private Set<Course> courses = new HashSet<>();
+
+    public Student() {
+    }
+
+    public Student(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Set<Course> getCourses() {
+        return courses;
+    }
+
+    public void setCourses(Set<Course> courses) {
+        this.courses = courses;
+    }
+}
+Course entity
+  package com.example.demo.entity;
+
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "courses")
+public class Course {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String courseName;
+
+    private double fee;
+
+    @ManyToMany(mappedBy = "courses")
+    private Set<Student> students = new HashSet<>();
+
+    public Course() {
+    }
+
+    public Course(String courseName, double fee) {
+        this.courseName = courseName;
+        this.fee = fee;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
+    public double getFee() {
+        return fee;
+    }
+
+    public void setFee(double fee) {
+        this.fee = fee;
+    }
+
+    public Set<Student> getStudents() {
+        return students;
+    }
+
+    public void setStudents(Set<Student> students) {
+        this.students = students;
+    }
+}
+Understand the Relationship
+The important part is:
+@ManyToMany
+@JoinTable(
+    name = "student_course",
+    joinColumns = @JoinColumn(name = "student_id"),
+    inverseJoinColumns = @JoinColumn(name = "course_id")
+)
+private Set<Course> courses;
+This tells JPA:
+
+Student
+   |
+   | Many
+   |
+   +------ Course
+              |
+              | Many
+              |
+           Student
+A third table will automatically be created:
+
+student_course
+------------------------
+student_id | course_id
+------------------------
+1          | 1
+1          | 2
+2          | 1
+2          | 3
+This is called the join table.
+
+8. Why mappedBy?
+In Course:
+@ManyToMany(mappedBy = "courses")
+private Set<Student> students;
+mappedBy = "courses" means:
+The Student entity owns the relationship.
+Therefore, we normally add/update the relationship from the Student side.
+
+  Student Repository
+package com.example.demo.repository;
+import com.example.demo.entity.Student;
+import org.springframework.data.jpa.repository.JpaRepository;
+public interface StudentRepository extends JpaRepository<Student, Long> {
+}
+10. Course Repository
+package com.example.demo.repository;
+import com.example.demo.entity.Course;
+import org.springframework.data.jpa.repository.JpaRepository;
+public interface CourseRepository extends JpaRepository<Course, Long> {
+}
+
+Student Service
+  package com.example.demo.service;
+
+import com.example.demo.entity.Course;
+import com.example.demo.entity.Student;
+import com.example.demo.repository.CourseRepository;
+import com.example.demo.repository.StudentRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class StudentService {
+
+    private final StudentRepository studentRepository;
+    private final CourseRepository courseRepository;
+
+    public StudentService(StudentRepository studentRepository,
+                          CourseRepository courseRepository) {
+
+        this.studentRepository = studentRepository;
+        this.courseRepository = courseRepository;
+    }
+
+    // Add student
+    public Student addStudent(Student student) {
+
+        return studentRepository.save(student);
+    }
+
+    // Get all students
+    public List<Student> getAllStudents() {
+
+        return studentRepository.findAll();
+    }
+
+    // Get student by ID
+    public Student getStudentById(Long id) {
+
+        return studentRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Student not found"));
+    }
+
+    // Enroll student in course
+    public Student enrollCourse(Long studentId, Long courseId) {
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() ->
+                        new RuntimeException("Student not found"));
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() ->
+                        new RuntimeException("Course not found"));
+
+        student.getCourses().add(course);
+
+        return studentRepository.save(student);
+    }
+}
+
+Course Service
+  package com.example.demo.service;
+
+import com.example.demo.entity.Course;
+import com.example.demo.repository.CourseRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class CourseService {
+
+    private final CourseRepository courseRepository;
+
+    public CourseService(CourseRepository courseRepository) {
+        this.courseRepository = courseRepository;
+    }
+
+    // Add course
+    public Course addCourse(Course course) {
+
+        return courseRepository.save(course);
+    }
+
+    // Get all courses
+    public List<Course> getAllCourses() {
+
+        return courseRepository.findAll();
+    }
+
+    // Get course by ID
+    public Course getCourseById(Long id) {
+
+        return courseRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Course not found"));
+    }
+}
+
+StudentController
+  package com.example.demo.controller;
+
+import com.example.demo.entity.Student;
+import com.example.demo.service.StudentService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    private final StudentService studentService;
+
+    public StudentController(StudentService studentService) {
+        this.studentService = studentService;
+    }
+
+    // Add student
+    @PostMapping
+    public Student addStudent(@RequestBody Student student) {
+
+        return studentService.addStudent(student);
+    }
+
+    // Get all students
+    @GetMapping
+    public List<Student> getAllStudents() {
+
+        return studentService.getAllStudents();
+    }
+
+    // Get student by ID
+    @GetMapping("/{id}")
+    public Student getStudentById(@PathVariable Long id) {
+
+        return studentService.getStudentById(id);
+    }
+
+    // Enroll student into course
+    @PostMapping("/{studentId}/courses/{courseId}")
+    public Student enrollCourse(
+            @PathVariable Long studentId,
+            @PathVariable Long courseId) {
+
+        return studentService.enrollCourse(studentId, courseId);
+    }
+}
+
+Course Controller
+  package com.example.demo.controller;
+
+import com.example.demo.entity.Course;
+import com.example.demo.service.CourseService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/courses")
+public class CourseController {
+
+    private final CourseService courseService;
+
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
+    }
+
+    // Add course
+    @PostMapping
+    public Course addCourse(@RequestBody Course course) {
+
+        return courseService.addCourse(course);
+    }
+
+    // Get all courses
+    @GetMapping
+    public List<Course> getAllCourses() {
+
+        return courseService.getAllCourses();
+    }
+
+    // Get course by ID
+    @GetMapping("/{id}")
+    public Course getCourseById(@PathVariable Long id) {
+
+        return courseService.getCourseById(id);
+    }
+}
+
+Step 1: Add Students
+POST
+http://localhost:8080/students
+Body → raw → JSON
+{
+    "name": "Rahul",
+    "email": "rahul@gmail.com"
+}
+Step 2: Add Courses
+POST
+http://localhost:8080/courses
+Body:
+{
+    "courseName": "Java",
+    "fee": 15000
+}
+Step 3: Enroll Rahul in Java
+Now we want:
+Rahul → Java
+Use:
+POST
+http://localhost:8080/students/1/courses/1
+  Enroll Rahul in Python
+POST
+http://localhost:8080/students/1/courses/2
+
+Step 4: Get Student
+GET
+http://localhost:8080/students/1
+
+Because both entities reference each other, returning them directly can cause:
+Student
+   ↓
+Course
+   ↓
+Student
+   ↓
+Course
+   ↓
+Student
+...
+This can cause:
+Infinite recursion
+and eventually:
+StackOverflowError
+So for a proper REST API, we should handle JSON serialization.
+
+  Fix Infinite JSON Recursion
+
+One simple approach is:
+
+In Student.java:
+
+@ManyToMany
+@JoinTable(
+        name = "student_course",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "course_id")
+)
+@JsonManagedReference
+private Set<Course> courses = new HashSet<>();
+
+And in Course.java:
+@ManyToMany(mappedBy = "courses")
+@JsonBackReference
+private Set<Student> students = new HashSet<>();
+
+How to Add Multiple Courses at Once
+Suppose Rahul wants:
+Java
+Python
+Spring Boot
+You could create an endpoint like:
+
+@PostMapping("/{studentId}/courses")
+public Student enrollMultipleCourses(
+        @PathVariable Long studentId,
+        @RequestBody Set<Long> courseIds) {
+
+
+    return studentService.enrollMultipleCourses(
+            studentId,
+            courseIds
+    );
+}
+ervice:
+
+public Student enrollMultipleCourses(
+        Long studentId,
+        Set<Long> courseIds) {
+
+
+    Student student = studentRepository.findById(studentId)
+            .orElseThrow(() ->
+                    new RuntimeException("Student not found"));
+
+
+    for (Long courseId : courseIds) {
+
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Course not found: " + courseId));
+
+
+        student.getCourses().add(course);
+    }
+
+
+    return studentRepository.save(student);
+}
+POST
+http://localhost:8080/students/1/courses
+
+Body:
+
+[
+    1,
+    2,
+    3
+]
+
+One Important JPA Concept
+
+Remember this pattern:
+
+@ManyToMany
+@JoinTable(...)
+private Set<Course> courses;
+
+is the owning side.
+
+And:
+
+@ManyToMany(mappedBy = "courses")
+private Set<Student> students;
+
+is the inverse side.
