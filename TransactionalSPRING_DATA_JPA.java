@@ -532,6 +532,610 @@ public class TransferResponse {
         return amount;
     }
 }
+//Repository
+package com.example.moneytransfer.repository;
+
+import com.example.moneytransfer.entity.Account;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface AccountRepository
+        extends JpaRepository<Account, Long> {
+
+    Optional<Account> findByAccountNumber(
+            String accountNumber
+    );
+
+    boolean existsByAccountNumber(
+            String accountNumber
+    );
+}
+
+//Custom exceptions
+AccountNotFoundException
+package com.example.moneytransfer.exception;
+
+public class AccountNotFoundException
+        extends RuntimeException {
+
+    public AccountNotFoundException(String message) {
+        super(message);
+    }
+}
+InsufficientBalanceException
+package com.example.moneytransfer.exception;
+
+public class InsufficientBalanceException
+        extends RuntimeException {
+
+    public InsufficientBalanceException(String message) {
+        super(message);
+    }
+}
+InvalidTransferException
+package com.example.moneytransfer.exception;
+
+public class InvalidTransferException
+        extends RuntimeException {
+
+    public InvalidTransferException(String message) {
+        super(message);
+    }
+}
+//Controller code
+package com.example.moneytransfer.controller;
+
+import com.example.moneytransfer.dto.AccountResponse;
+import com.example.moneytransfer.dto.CreateAccountRequest;
+import com.example.moneytransfer.dto.TransferRequest;
+import com.example.moneytransfer.dto.TransferResponse;
+import com.example.moneytransfer.service.AccountService;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/accounts")
+public class AccountController {
+
+    private final AccountService accountService;
+
+    public AccountController(
+            AccountService accountService) {
+
+        this.accountService = accountService;
+    }
+
+    // ----------------------------------------
+    // CREATE ACCOUNT
+    // ----------------------------------------
+
+    @PostMapping
+    public ResponseEntity<AccountResponse> createAccount(
+            @Valid @RequestBody CreateAccountRequest request) {
+
+        AccountResponse response =
+                accountService.createAccount(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    // ----------------------------------------
+    // GET ACCOUNT
+    // ----------------------------------------
+
+    @GetMapping("/{accountNumber}")
+    public ResponseEntity<AccountResponse> getAccount(
+            @PathVariable String accountNumber) {
+
+        AccountResponse response =
+                accountService.getAccount(accountNumber);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ----------------------------------------
+    // GET ALL ACCOUNTS
+    // ----------------------------------------
+
+    @GetMapping
+    public ResponseEntity<List<AccountResponse>> getAllAccounts() {
+
+        return ResponseEntity.ok(
+                accountService.getAllAccounts()
+        );
+    }
+
+    // ----------------------------------------
+    // MONEY TRANSFER
+    // ----------------------------------------
+
+    @PostMapping("/transfer")
+    public ResponseEntity<TransferResponse> transferMoney(
+            @Valid @RequestBody TransferRequest request) {
+
+        TransferResponse response =
+                accountService.transferMoney(request);
+
+        return ResponseEntity.ok(response);
+    }
+}
+//Service code
+package com.example.moneytransfer.service;
+
+import com.example.moneytransfer.dto.AccountResponse;
+import com.example.moneytransfer.dto.CreateAccountRequest;
+import com.example.moneytransfer.dto.TransferRequest;
+import com.example.moneytransfer.dto.TransferResponse;
+import com.example.moneytransfer.entity.Account;
+import com.example.moneytransfer.exception.AccountNotFoundException;
+import com.example.moneytransfer.exception.InsufficientBalanceException;
+import com.example.moneytransfer.exception.InvalidTransferException;
+import com.example.moneytransfer.repository.AccountRepository;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Service
+public class AccountService {
+
+    private final AccountRepository accountRepository;
+
+    public AccountService(
+            AccountRepository accountRepository) {
+
+        this.accountRepository = accountRepository;
+    }
+
+    // ----------------------------------------
+    // CREATE ACCOUNT
+    // ----------------------------------------
+
+    @Transactional
+    public AccountResponse createAccount(
+            CreateAccountRequest request) {
+
+        if (accountRepository.existsByAccountNumber(
+                request.getAccountNumber())) {
+
+            throw new InvalidTransferException(
+                    "Account number already exists"
+            );
+        }
+
+        BigDecimal initialBalance =
+                request.getBalance() == null
+                        ? BigDecimal.ZERO
+                        : request.getBalance();
+
+        Account account = new Account(
+                request.getAccountNumber(),
+                request.getAccountHolderName(),
+                initialBalance
+        );
+
+        Account savedAccount =
+                accountRepository.save(account);
+
+        return convertToResponse(savedAccount);
+    }
+
+    // ----------------------------------------
+    // GET ACCOUNT
+    // ----------------------------------------
+
+    @Transactional(readOnly = true)
+    public AccountResponse getAccount(
+            String accountNumber) {
+
+        Account account =
+                findAccount(accountNumber);
+
+        return convertToResponse(account);
+    }
+
+    // ----------------------------------------
+    // GET ALL ACCOUNTS
+    // ----------------------------------------
+
+    @Transactional(readOnly = true)
+    public List<AccountResponse> getAllAccounts() {
+
+        return accountRepository.findAll()
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    // ----------------------------------------
+    // MONEY TRANSFER
+    // ----------------------------------------
+
+    @Transactional
+    public TransferResponse transferMoney(
+            TransferRequest request) {
+
+        String fromAccountNumber =
+                request.getFromAccountNumber();
+
+        String toAccountNumber =
+                request.getToAccountNumber();
+
+        BigDecimal amount =
+                request.getAmount();
+
+        // 1. Same account validation
+        if (fromAccountNumber.equals(toAccountNumber)) {
+
+            throw new InvalidTransferException(
+                    "Source and destination accounts cannot be the same"
+            );
+        }
+
+        // 2. Amount validation
+        if (amount == null ||
+                amount.compareTo(BigDecimal.ZERO) <= 0) {
+
+            throw new InvalidTransferException(
+                    "Transfer amount must be greater than zero"
+            );
+        }
+
+        // 3. Find sender
+        Account fromAccount =
+                findAccount(fromAccountNumber);
+
+        // 4. Find receiver
+        Account toAccount =
+                findAccount(toAccountNumber);
+
+        // 5. Check balance
+        if (fromAccount.getBalance()
+                .compareTo(amount) < 0) {
+
+            throw new InsufficientBalanceException(
+                    "Insufficient balance in source account"
+            );
+        }
+
+        // ------------------------------------
+        // DEBIT
+        // ------------------------------------
+
+        fromAccount.setBalance(
+                fromAccount.getBalance()
+                        .subtract(amount)
+        );
+
+        // ------------------------------------
+        // CREDIT
+        // ------------------------------------
+
+        toAccount.setBalance(
+                toAccount.getBalance()
+                        .add(amount)
+        );
+
+        // Save both
+        accountRepository.save(fromAccount);
+        accountRepository.save(toAccount);
+
+        return new TransferResponse(
+                "Money transferred successfully",
+                fromAccount.getAccountNumber(),
+                toAccount.getAccountNumber(),
+                amount
+        );
+    }
+
+    // ----------------------------------------
+    // FIND ACCOUNT
+    // ----------------------------------------
+
+    private Account findAccount(
+            String accountNumber) {
+
+        return accountRepository
+                .findByAccountNumber(accountNumber)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account not found: "
+                                        + accountNumber
+                        )
+                );
+    }
+
+    // ----------------------------------------
+    // ENTITY → DTO
+    // ----------------------------------------
+
+    private AccountResponse convertToResponse(
+            Account account) {
+
+        return new AccountResponse(
+                account.getId(),
+                account.getAccountNumber(),
+                account.getAccountHolderName(),
+                account.getBalance()
+        );
+    }
+}
+//GlobalExceptionHandler.class
+package com.example.moneytransfer.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // ----------------------------------------
+    // ACCOUNT NOT FOUND
+    // ----------------------------------------
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleAccountNotFound(
+            AccountNotFoundException ex) {
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+    }
+
+    // ----------------------------------------
+    // INSUFFICIENT BALANCE
+    // ----------------------------------------
+
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleInsufficientBalance(
+            InsufficientBalanceException ex) {
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+    }
+
+    // ----------------------------------------
+    // INVALID TRANSFER
+    // ----------------------------------------
+
+    @ExceptionHandler(InvalidTransferException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleInvalidTransfer(
+            InvalidTransferException ex) {
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+    }
+
+    // ----------------------------------------
+    // VALIDATION ERROR
+    // ----------------------------------------
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleValidationErrors(
+            MethodArgumentNotValidException ex) {
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+        Map<String, String> errors =
+                new HashMap<>();
+
+        ex.getBindingResult()
+                .getFieldErrors()
+                .forEach(error ->
+                        errors.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
+                );
+
+        response.put("timestamp",
+                LocalDateTime.now());
+
+        response.put("status",
+                HttpStatus.BAD_REQUEST.value());
+
+        response.put("errors", errors);
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
+    }
+
+    // ----------------------------------------
+    // GENERIC EXCEPTION
+    // ----------------------------------------
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>>
+    handleGenericException(Exception ex) {
+
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred"
+        );
+    }
+
+    // ----------------------------------------
+    // COMMON RESPONSE
+    // ----------------------------------------
+
+    private ResponseEntity<Map<String, Object>>
+    buildResponse(
+            HttpStatus status,
+            String message) {
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+        response.put(
+                "timestamp",
+                LocalDateTime.now()
+        );
+
+        response.put(
+                "status",
+                status.value()
+        );
+
+        response.put(
+                "message",
+                message
+        );
+
+        return ResponseEntity
+                .status(status)
+                .body(response);
+    }
+}
+hOW To add data
+    Create Account 1
+POST http://localhost:8080/api/accounts
+
+Body → raw → JSON:
+
+{
+    "accountNumber": "1000000001",
+    "accountHolderName": "John",
+    "balance": 10000.00
+}
+Create Account 2
+POST http://localhost:8080/api/accounts
+
+Body:
+
+{
+    "accountNumber": "1000000002",
+    "accountHolderName": "David",
+    "balance": 5000.00
+}
+Check All Accounts
+
+Request:
+
+GET http://localhost:8080/api/accounts
+
+Transfer Money
+Now:
+John
+₹10,000
+transfers:
+₹2,000
+to:
+David
+₹5,000
+Request:
+POST http://localhost:8080/api/accounts/transfer
+    Body:
+
+{
+    "fromAccountNumber": "1000000001",
+    "toAccountNumber": "1000000002",
+    "amount": 2000.00
+}
+Perfect:
+Before:
+John  = ₹10,000
+David = ₹5,000
+
+        ↓ ₹2,000
+After:
+John  = ₹8,000
+David = ₹7,000
+Total money remains:
+₹15,000
+
+    Test Validation — Negative Amount
+
+Send:
+
+{
+    "fromAccountNumber": "1000000001",
+    "toAccountNumber": "1000000002",
+    "amount": -2000.00
+}
+you'll get:
+
+{
+    "timestamp": "...",
+    "status": 400,
+    "errors": {
+        "amount": "Transfer amount must be greater than zero"
+    }
+}
+Test Insufficient Balance
+Suppose John has:
+₹8,000
+Try:
+{
+    "fromAccountNumber": "1000000001",
+    "toAccountNumber": "1000000002",
+    "amount": 10000.00
+}
+Service checks:
+
+if (fromAccount.getBalance()
+        .compareTo(amount) < 0) {
+Test Account Not Found
+Request:
+
+{
+    "fromAccountNumber": "9999999999",
+    "toAccountNumber": "1000000002",
+    "amount": 1000.00
+}
+Response:
+
+{
+    "timestamp": "...",
+    "status": 404,
+    "message": "Account not found: 9999999999"
+}
+    Test Same Account
+
+Request:
+
+{
+    "fromAccountNumber": "1000000001",
+    "toAccountNumber": "1000000001",
+    "amount": 1000.00
+}
+
+Response:
+
+{
+    "timestamp": "...",
+    "status": 400,
+    "message": "Source and destination accounts cannot be the same"
+}
+    
 
 
   
