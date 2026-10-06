@@ -174,6 +174,110 @@ public class SecurityConfig {
     }
 }
 
+1h) .....................AuthController
+  package com.example.securitydemo.controller;
+
+import com.example.securitydemo.entity.User;
+import com.example.securitydemo.repository.UserRepository;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    private final UserRepository userRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    public AuthController(UserRepository userRepository,
+                          PasswordEncoder passwordEncoder) {
+
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody User user) {
+
+        // 1. Check whether username already exists
+        if (userRepository.existsByUsername(user.getUsername())) {
+            return ResponseEntity.badRequest()
+                    .body("Username already exists");
+        }
+
+        // 2. Convert plain password into BCrypt hash
+        String encodedPassword =
+                passwordEncoder.encode(user.getPassword());
+
+        // 3. Replace plain password with encoded password
+        user.setPassword(encodedPassword);
+
+        // 4. Set default role
+        user.setRole("USER");
+
+        // 5. Save user into MySQL
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Registration successful");
+    }
+}
+
+
+
+....................................................Login FLOW...................................
+  l1) LoginRequest.java
+  package com.example.securitydemo.dto;
+
+public class LoginRequest {
+
+    private String username;
+
+    private String password;
+
+    public LoginRequest() {
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}
+
+l2) UserRepository.java
+  We already created this during registration.
+  package com.example.securitydemo.repository;
+
+import com.example.securitydemo.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface UserRepository
+        extends JpaRepository<User, Long> {
+
+    boolean existsByUsername(String username);
+
+    Optional<User> findByUsername(String username);
+}
+
+
 1f).............. UserDetailsService
   Now lets connect our database user to Spring security
   @Service
