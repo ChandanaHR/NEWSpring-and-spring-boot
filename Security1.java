@@ -278,9 +278,20 @@ public interface UserRepository
 }
 
 
-1f).............. UserDetailsService
+l3) UserDetailsService
   Now lets connect our database user to Spring security
-  @Service
+ package com.example.securitydemo.service;
+
+import com.example.securitydemo.entity.User;
+import com.example.securitydemo.repository.UserRepository;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import org.springframework.stereotype.Service;
+
+@Service
 public class CustomUserDetailsService
         implements UserDetailsService {
 
@@ -301,8 +312,7 @@ public class CustomUserDetailsService
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "User not found"
-                        )
-                );
+                        ));
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
