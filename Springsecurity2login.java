@@ -146,3 +146,71 @@ public class SecurityConfig {
         return http.build();
     }
 }
+
+2d) AuthController.java
+  package com.example.securitydemo.controller;
+
+import com.example.securitydemo.dto.LoginRequest;
+import com.example.securitydemo.entity.User;
+import com.example.securitydemo.repository.UserRepository;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+
+    public AuthController(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager) {
+
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody User user) {
+
+        if (userRepository.existsByUsername(user.getUsername())) {
+            return ResponseEntity.badRequest()
+                    .body("Username already exists");
+        }
+
+        String encodedPassword =
+                passwordEncoder.encode(user.getPassword());
+
+        user.setPassword(encodedPassword);
+        user.setRole("USER");
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Registration successful");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(
+            @RequestBody LoginRequest request) {
+
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                request.getUsername(),
+                                request.getPassword()
+                        )
+                );
+
+        return ResponseEntity.ok("Login successful");
+    }
+}
