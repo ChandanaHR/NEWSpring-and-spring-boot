@@ -353,3 +353,182 @@ authorities = ROLE_USER
   
   
 spring.jpa.properties.hibernate.format_sql=true
+
+
+
+
+  ----------------------Final Frontend code--------------------
+import { useState } from "react";
+import "./App.css";
+
+const API_URL = "http://localhost:8080/api/auth";
+
+function App() {
+  const [mode, setMode] = useState("register");
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setMessage("");
+    setLoading(true);
+
+    const endpoint =
+      mode === "register" ? "/register" : "/login";
+
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password,
+        }),
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(
+          responseText || `Request failed: ${response.status}`
+        );
+      }
+
+      setMessage(responseText);
+
+      if (mode === "register") {
+        setUsername("");
+        setPassword("");
+        // Allow the user to proceed to login.
+        setMode("login");
+      } else {
+        // Your current backend returns a success message,
+        // but does not create a persistent login session or JWT.
+        setPassword("");
+      }
+    } catch (error) {
+      console.error("Authentication request failed:", error);
+
+      setMessage(
+        error.message === "Failed to fetch"
+          ? "Cannot connect to the backend. Check Spring Boot, the URL, and CORS."
+          : error.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    setMessage("");
+    setUsername("");
+    setPassword("");
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1>Security Demo</h1>
+        <p className="subtitle">
+          Register your account or sign in
+        </p>
+
+        <div className="tabs">
+          <button
+            type="button"
+            className={mode === "register" ? "active" : ""}
+            onClick={() => switchMode("register")}
+          >
+            Register
+          </button>
+
+          <button
+            type="button"
+            className={mode === "login" ? "active" : ""}
+            onClick={() => switchMode("login")}
+          >
+            Login
+          </button>
+        </div>
+
+        <h2>
+          {mode === "register" ? "Create Account" : "Welcome Back"}
+        </h2>
+
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            placeholder="Enter username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            autoComplete="username"
+          />
+
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete={
+              mode === "register"
+                ? "new-password"
+                : "current-password"
+            }
+          />
+
+          <button
+            type="submit"
+            className="submit-button"
+            disabled={loading}
+          >
+            {loading
+              ? "Please wait..."
+              : mode === "register"
+              ? "Register"
+              : "Login"}
+          </button>
+        </form>
+
+        {message && (
+          <p className="message" role="status">
+            {message}
+          </p>
+        )}
+
+        <p className="switch-text">
+          {mode === "register"
+            ? "Already have an account?"
+            : "New user?"}{" "}
+          <button
+            type="button"
+            className="text-button"
+            onClick={() =>
+              switchMode(
+                mode === "register" ? "login" : "register"
+              )
+            }
+          >
+            {mode === "register" ? "Login here" : "Register here"}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
