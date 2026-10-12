@@ -28,3 +28,66 @@ Now you click My Profile.
 The website needs to know: Who is viewing this profile?
 It already knows that you logged in as chandana. It should not ask you to enter your password again just to display your name.
 This is where SecurityContextHolder becomes useful. It lets your application access the identity of the currently authenticated user.
+  SecurityConfig.java
+  
+package com.example.demo.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+public class SecurityConfig {
+
+    // STEP 1: Configure security rules
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/public").permitAll()
+                .requestMatchers("/profile").authenticated()
+                .requestMatchers("/admin").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .formLogin(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    // STEP 2: Create a user for learning
+    @Bean
+    public UserDetailsService userDetailsService(
+            PasswordEncoder passwordEncoder) {
+
+        UserDetails user = User.builder()
+            .username("student")
+            .password(passwordEncoder.encode("pass123"))
+            .roles("USER")
+            .build();
+
+        UserDetails admin = User.builder()
+            .username("admin")
+            .password(passwordEncoder.encode("admin123"))
+            .roles("ADMIN")
+            .build();
+
+        return new InMemoryUserDetailsManager(user, admin);
+    }
+
+    // STEP 3: Encode passwords
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+
