@@ -164,3 +164,91 @@ AuthenticationManager	Coordinates authentication.
 DaoAuthenticationProvider	Checks the user details and submitted password.
 SecurityContextHolderFilter	Establishes access to the security context for the current request, loading it through the configured security-context repository.
 SecurityContextHolder	Provides access to the current thread's security context.
+
+
+1c) AuthorizationFilter
+  SecurityConfig.java
+  package com.example.Secondproject;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+public class SecurityConfig {
+	@Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService(
+            PasswordEncoder encoder) {
+
+        UserDetails customer = User.builder()
+                .username("chandana")
+                .password(encoder.encode("User@123"))
+                .roles("USER")
+                .build();
+
+        UserDetails admin = User.builder()
+                .username("admin")
+                .password(encoder.encode("Admin@123"))
+                .roles("ADMIN")
+                .build();
+
+        return new InMemoryUserDetailsManager(customer, admin);
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/home").permitAll()
+                .requestMatchers("/admin").hasRole("ADMIN")
+                .requestMatchers("/dashboard").authenticated()
+                .anyRequest().denyAll()
+            )
+            .formLogin(Customizer.withDefaults());
+
+        return http.build();
+    }
+}
+
+
+Controller.java
+  
+package com.example.securitydemo.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class DemoController {
+
+    @GetMapping("/home")
+    public String home() {
+        return "Welcome! Anyone can access this page.";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard() {
+        return "Welcome to your user dashboard.";
+    }
+
+    @GetMapping("/admin")
+    public String admin() {
+        return "Welcome to the admin dashboard.";
+    }
+}
+
