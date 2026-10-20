@@ -252,3 +252,232 @@ public class DemoController {
     }
 }
 
+
+Final example ----------------------Final example--------------------------
+	a) User.java
+	package com.example.authdemo.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String role = "ROLE_USER";
+
+    public User() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+}
+
+b) Userrepository.java
+	package com.example.authdemo.repository;
+
+import com.example.authdemo.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface UserRepository
+        extends JpaRepository<User, Long> {
+
+    Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String email);
+}
+
+c) Registrationservice.java
+	package com.example.authdemo.service;
+
+import com.example.authdemo.entity.User;
+import com.example.authdemo.repository.UserRepository;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RegistrationService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public RegistrationService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
+
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public User register(String email, String rawPassword) {
+
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException(
+                    "Email is already registered");
+        }
+
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(
+                passwordEncoder.encode(rawPassword));
+        user.setRole("ROLE_USER");
+
+        return userRepository.save(user);
+    }
+}
+
+d)AuthController.java
+	package com.example.authdemo.controller;
+
+import com.example.authdemo.entity.User;
+import com.example.authdemo.service.RegistrationService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+public class AuthController {
+
+    private final RegistrationService registrationService;
+
+    public AuthController(
+            RegistrationService registrationService) {
+        this.registrationService = registrationService;
+    }
+
+    @GetMapping("/csrf")
+    public CsrfToken csrf(CsrfToken token) {
+        return token;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(
+            @RequestBody RegisterRequest request) {
+
+        try {
+            User user = registrationService.register(
+                    request.email(),
+                    request.password());
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "message", "Registration successful",
+                            "id", user.getId(),
+                            "email", user.getEmail()
+                    ));
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error", ex.getMessage()
+                    ));
+        }
+    }
+
+    @GetMapping("/user/profile")
+    public Map<String, String> profile(
+            Authentication authentication) {
+
+        return Map.of(
+                "message", "You are authenticated",
+                "email", authentication.getName()
+        );
+    }
+
+    @GetMapping("/public")
+    public Map<String, String> publicEndpoint() {
+        return Map.of("message", "Public endpoint");
+    }
+
+    public record RegisterRequest(
+            String email,
+            String password) {
+    }
+}
+
+d) CustomUserDetailsService.java
+	package com.example.authdemo.service;
+
+import com.example.authdemo.entity.User;
+import com.example.authdemo.repository.UserRepository;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CustomUserDetailsService
+        implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    public CustomUserDetailsService(
+            UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email)
+            throws UsernameNotFoundException {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found"));
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())
+                .authorities(user.getRole())
+                .build();
+    }
+}
+
+
+
+
