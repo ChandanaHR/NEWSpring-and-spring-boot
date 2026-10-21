@@ -439,6 +439,136 @@ public class AuthController {
     }
 }
 
+e) SecurityConfig.java
+	package com.example.authdemo.config;
+
+import com.example.authdemo.service.CustomUserDetailsService;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+
+import java.io.IOException;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration)
+            throws Exception {
+
+        return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public CsrfTokenRepository csrfTokenRepository() {
+        return new HttpSessionCsrfTokenRepository();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            CsrfTokenRepository csrfTokenRepository,
+            CustomUserDetailsService userDetailsService)
+            throws Exception {
+
+        http
+            // 1. CSRF protection
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(csrfTokenRepository)
+                .csrfTokenRequestHandler(
+                    new CsrfTokenRequestAttributeHandler())
+            )
+
+            // 2. Load user details from our database
+            .userDetailsService(userDetailsService)
+
+            // 3. Authentication configuration
+            .formLogin(form -> form
+                .loginProcessingUrl("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
+
+                .successHandler((request, response, authentication) -> {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                        "{\"message\":\"Login successful\"}");
+                })
+
+                .failureHandler((request, response, exception) -> {
+                    response.setStatus(
+                        HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                        "{\"error\":\"Invalid email or password\"}");
+                })
+            )
+
+            // 4. Authorization rules
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/csrf",
+                    "/register",
+                    "/login",
+                    "/public"
+                ).permitAll()
+
+                .requestMatchers("/admin/**")
+                    .hasRole("ADMIN")
+
+                .requestMatchers("/user/**")
+                    .authenticated()
+
+                .anyRequest()
+                    .authenticated()
+            )
+
+            // 5. Handle unauthenticated and forbidden requests
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(
+                    (request, response, exception) -> {
+                        response.sendError(
+                            HttpServletResponse.SC_UNAUTHORIZED,
+                            "Please log in first");
+                    }
+                )
+                .accessDeniedHandler(
+                    (request, response, exception) -> {
+                        response.sendError(
+                            HttpServletResponse.SC_FORBIDDEN,
+                            "You do not have permission");
+                    }
+                )
+            );
+
+        return http.build();
+    }
+}
+
 d) CustomUserDetailsService.java
 	package com.example.authdemo.service;
 
