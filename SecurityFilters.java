@@ -900,5 +900,116 @@ public class SecurityConfig {
     }
 }
 
+g) AuthController.java
+	package com.example.authdemo.controller;
+
+import com.example.authdemo.dto.RegisterRequest;
+import com.example.authdemo.service.RegistrationService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api")
+public class AuthController {
+
+    private final RegistrationService registrationService;
+    private final AuthenticationManager authenticationManager;
+    private final SecurityContextRepository securityContextRepository;
+
+    public AuthController(
+            RegistrationService registrationService,
+            AuthenticationManager authenticationManager,
+            SecurityContextRepository securityContextRepository) {
+        this.registrationService = registrationService;
+        this.authenticationManager = authenticationManager;
+        this.securityContextRepository = securityContextRepository;
+    }
+
+    // Step 1: React requests a CSRF token.
+    @GetMapping("/csrf")
+    public Map<String, String> csrf(CsrfToken csrfToken) {
+        return Map.of(
+                "headerName", csrfToken.getHeaderName(),
+                "token", csrfToken.getToken()
+        );
+    }
+
+    // Step 2: Register a new user.
+    @PostMapping("/register")
+    public ResponseEntity<?> register(
+            @Valid @RequestBody RegisterRequest request) {
+
+        try {
+            registrationService.register(request);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "message", "Registration successful"
+                    ));
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", ex.getMessage()));
+        }
+    }
+
+    // Step 3: Authenticate an existing user.
+    @PostMapping("/login")
+    public ResponseEntity<?> login(
+            @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+
+        Authentication authentication =
+                authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                    )
+                );
+
+        // Create a context for the authenticated user.
+        SecurityContext context =
+                SecurityContextHolder.createEmptyContext();
+
+        context.setAuthentication(authentication);
+
+        SecurityContextHolder.setContext(context);
+
+        // Persist the context so later requests use the session.
+        securityContextRepository.saveContext(
+                context, httpRequest, httpResponse);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Login successful")
+        );
+    }
+
+    // Step 4: Test whether the user is authenticated.
+    @GetMapping("/profile")
+    public Map<String, String> profile(
+            Authentication authentication) {
+
+        return Map.of(
+                "email", authentication.getName(),
+                "message", "You are authenticated"
+        );
+    }
+}
+
 
 
