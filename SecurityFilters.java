@@ -1011,5 +1011,140 @@ public class AuthController {
     }
 }
 
+h) AuthExceptionHandler.java
+	package com.example.authdemo.controller;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.Map;
+
+@RestControllerAdvice
+public class AuthExceptionHandler {
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<?> handleAuthenticationException(
+            AuthenticationException ex) {
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                        "message", "Invalid email or password"
+                ));
+    }
+}
+
+React frontend
+	
+import { useState } from "react";
+
+const API = "http://localhost:8080/api";
+
+export default function App() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  async function getCsrfToken() {
+    const response = await fetch(`${API}/csrf`, {
+      method: "GET",
+      credentials: "include"
+    });
+
+    if (!response.ok) {
+      throw new Error("Could not obtain CSRF token");
+    }
+
+    return response.json();
+  }
+
+  async function submit(path) {
+    try {
+      setMessage("");
+
+      // First obtain a CSRF token from Spring Boot.
+      const csrf = await getCsrfToken();
+
+      // Then send the form data and token.
+      const response = await fetch(`${API}/${path}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          [csrf.headerName]: csrf.token
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Request failed");
+      }
+
+      setMessage(data.message);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function getProfile() {
+    try {
+      const response = await fetch(`${API}/profile`, {
+        credentials: "include"
+      });
+
+      const data = await response.json();
+      setMessage(
+        response.ok ? `${data.message}: ${data.email}`
+                    : "Please log in first"
+      );
+    } catch {
+      setMessage("Could not connect to the backend");
+    }
+  }
+
+  return (
+    <div style={{ maxWidth: 350, margin: "50px auto" }}>
+      <h2>React + Spring Security</h2>
+
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+      />
+
+      <br /><br />
+
+      <input
+        type="password"
+        placeholder="Password (minimum 8 characters)"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+      />
+
+      <br /><br />
+
+      <button onClick={() => submit("register")}>
+        Register
+      </button>
+
+      <button onClick={() => submit("login")}>
+        Login
+      </button>
+
+      <button onClick={getProfile}>
+        My Profile
+      </button>
+
+      <p>{message}</p>
+    </div>
+  );
+}
+
+
 
 
